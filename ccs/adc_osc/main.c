@@ -19,8 +19,8 @@ int main(void)
 	UCSCTL4 = 0x03;
 
 //-----------Configuracoes do TIMER0A ---------------//
-	// Seleciona SMCLK como fonte | conta ate CCR0 | limpa o timer
-	TA0CTL = TASSEL_3 | MC_3 | TACLR;
+	// Seleciona ACLK como fonte | conta ate CCR0 | limpa o timer
+	TA0CTL = TASSEL_1 | MC_3 | TACLR;
 
 	// Conta ate XXXX para dar um periodo de amostragem do ADC12_A
 	// de YY s.
