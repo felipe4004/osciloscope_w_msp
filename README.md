@@ -8,7 +8,13 @@ em seu uso mais básico. Para um melhor ajuste, pode-se usar rotary encoders para
 segundos/div e volts/div.
 
 # Features
-O oscilos
+ -- Taxa de amostragem até ~180 kSa/s.
+ -- Frequência máxima de entrada 400 kHz.
+ -- Ajuste fino e grosso por velocidade de movimento dos encoders.
+ -- Ajuste de trigger.
+ -- Tensão máxima de entrada de 10 volts.
+ -- Display LCD TFT.
+ -- Caracterização do sinal de entrada: frequência, valor médio, valor pico-a-pico e amplitude.
 
 # Blocos Funcionais 
 O osciloscópio contará com os seguintes blocos:
