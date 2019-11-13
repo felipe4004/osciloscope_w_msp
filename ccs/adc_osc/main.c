@@ -57,6 +57,18 @@ int main(void)
 	UCSCTL1 = DCORSEL_4;
 	UCSCTL4 = 0x03;
 
+//----------Configuracao do ACLK---------------------//
+
+
+	    UCSCTL4 |= SELA_1;                      //VLO sendo fonte do ACLK
+
+//-----------Configuracao do timer para controle do pwm via encoder----//
+	    TA2CCTL1 = OUTMOD_7;                    //Timer A2 configurado no modo reset/set
+	    TA2CCR0 = 167;
+	    TA2CCR1 = count;                        //TACCR2 controlado pelo encoder
+	    TA2CTL |= TASSEL_1 | MC_1 | TACLR;
+
+
 //-----------Configuracoes do TIMER0A ---------------//
 	// Seleciona ACLK como fonte | conta ate CCR0 | limpa o timer
 	TA0CTL = TASSEL_1 | MC_3 | TACLR;
