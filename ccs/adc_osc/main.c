@@ -44,7 +44,7 @@ int main(void)
     P2DIR |= BIT4;                          //P2.4 sendo selecionado para saida
     P2SEL |= BIT4;                          //P2.4 sendo selecionado para funcao PWM
 
-    P1REN |= BIT5 | BIT4 | BIT3;            //Resistores internos em modo pull-up
+    P1REN |= BIT5 | BIT4 | BIT3;           //Resistores internos em modo pull-up
     P1OUT |= BIT5 | BIT4 | BIT3;
     P1IE  |= phaseb | sw;                   // interrupt enable dos pinos
     P1IES |= phaseb | sw;
