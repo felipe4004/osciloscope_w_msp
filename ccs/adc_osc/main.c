@@ -38,75 +38,10 @@ int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 
-	//configuracao das portas
-
-
-    P2DIR |= BIT4;                          //P2.4 sendo selecionado para saida
-    P2SEL |= BIT4;                          //P2.4 sendo selecionado para funcao PWM
-
-    P1REN |= BIT5 | BIT4 | BIT3;           //Resistores internos em modo pull-up
-    P1OUT |= BIT5 | BIT4 | BIT3;
-    P1IE  |= phaseb | sw;                   // interrupt enable dos pinos
-    P1IES |= phaseb | sw;
-    P1IFG = 0x00;
-
-
-//-----------Configuracoes do SMCLK -----------------//
-	// Selecionar tap 25 da faixa 4 p/ f = 25.075 MHz
-	UCSCTL0 = 0x1900;
-	UCSCTL1 = DCORSEL_4;
-	UCSCTL4 = 0x03;
-
-//----------Configuracao do ACLK---------------------//
-
-
-	    UCSCTL4 |= SELA_1;                      //VLO sendo fonte do ACLK
-
-//-----------Configuracao do timer para controle do pwm via encoder----//
-	    TA2CCTL1 = OUTMOD_7;                    //Timer A2 configurado no modo reset/set
-	    TA2CCR0 = 167;
-	    TA2CCR1 = count;                        //TACCR2 controlado pelo encoder
-	    TA2CTL |= TASSEL_1 | MC_1 | TACLR;
-
-
-//-----------Configuracoes do TIMER0A ---------------//
-	// Seleciona ACLK como fonte | conta ate CCR0 | limpa o timer
-	TA0CTL = TASSEL_1 | MC_3 | TACLR;
-
-	// Conta ate XXXX para dar um periodo de amostragem do ADC12_A
-	// de YY s.
-	// Tempo de amostragem: t_sample > (R_S + R_I) × ln(2^(n+1)) × C_I + 800 ns
-	// Para R_S = 10R, R_I = 1k, n=12, C_I = 20pF --> t_sample > 0.984 us ~ 1 us
-	TA0CCR0 = 15999;
-	
-	// CCR1 OUT --> ADC12SHS_1
-	// Modo de saida Reset/Set.
-	TA0CCTL1 = OUTMOD_7;
-
-//-----------Configuracoes do ADC12_A ---------------//
-	P6SEL |= BIT0; // Selecionar o ADC12_A no pino 6.0
-
-	REFCTL0 &= ~REFMSTR; // Tensao de referencia sera aquela do
-	                     // modulo interno do ADC ao invez daquela
-	                     // do modulo REF
-
-	// ligar o ADC12 | liga a referencia do ADC | referencia de 2.5 V | no. ciclos de clk para amostragem
-	// modo mais rapido possivel de amostragem = ADC12MSC
-	ADC12CTL0 = ADC12ON | ADC12REFON | ADC12REF2_5V | ADC12SHT0_12 | ADC12MSC;
-
-	// fonte da borda de subida do sample e hold | fonte do sinal SAMPCON | SMCLK como clk do ADC
-	// | modo de sequencia de conversao
-	ADC12CTL1 = ADC12SHS_1 | ADC12SHP | ADC12SSEL_3 | ADC12CONSEQ_0;
-	ADC12CTL2 = ADC12RES_2; // Resolucao de 12 bits
-
-	// Habilita o ADC12_A
-	// Mudancas nos parametros do ADC12_A devem ser feitas
-	// ANTES de habilitar o ADC12_A!
-	ADC12CTL0 |= ADC12ENC;
-
-	// Habilita as interrupcoes
-	ADC12IE = ADC12IE0;
-
+    UCSC_CFG();
+    TIMERA0_CFG();
+    ADC12_CFG();
+    ENCODER_CFG();
 
 	__enable_interrupt();
 
@@ -164,4 +99,74 @@ __interrupt void sw_push(void){
 
    }
     TA2CCR1 = count;                        //TACCR é atualizado com o valor obtido do encoder.
+}
+
+void UCSC_CFG() {
+//-----------Configuracoes do SMCLK -----------------//
+    // Selecionar tap 25 da faixa 4 p/ f = 25.075 MHz
+    UCSCTL0 = 0x1900;
+    UCSCTL1 = DCORSEL_4;
+    UCSCTL4 = 0x03;
+//----------Configuracao do ACLK---------------------//
+    UCSCTL4 |= SELA_1;                      //VLO sendo fonte do ACLK
+}
+
+void TIMERA0_CFG() {
+//-----------Configuracoes do TIMER0A ---------------//
+    // Seleciona ACLK como fonte | conta ate CCR0 | limpa o timer
+    TA0CTL = TASSEL_1 | MC_3 | TACLR;
+
+    // Conta ate XXXX para dar um periodo de amostragem do ADC12_A
+    // de YY s.
+    // Tempo de amostragem: t_sample > (R_S + R_I) × ln(2^(n+1)) × C_I + 800 ns
+    // Para R_S = 10R, R_I = 1k, n=12, C_I = 20pF --> t_sample > 0.984 us ~ 1 us
+    TA0CCR0 = 15999;
+
+    // CCR1 OUT --> ADC12SHS_1
+    // Modo de saida Reset/Set.
+    TA0CCTL1 = OUTMOD_7;
+
+}
+
+void ADC12_CFG() {
+//-----------Configuracoes do ADC12_A ---------------//
+    P6SEL |= BIT0; // Selecionar o ADC12_A no pino 6.0
+
+    REFCTL0 &= ~REFMSTR; // Tensao de referencia sera aquela do
+                         // modulo interno do ADC ao invez daquela
+                         // do modulo REF
+
+    // ligar o ADC12 | liga a referencia do ADC | referencia de 2.5 V | no. ciclos de clk para amostragem
+    // modo mais rapido possivel de amostragem = ADC12MSC
+    ADC12CTL0 = ADC12ON | ADC12REFON | ADC12REF2_5V | ADC12SHT0_12 | ADC12MSC;
+
+    // fonte da borda de subida do sample e hold | fonte do sinal SAMPCON | SMCLK como clk do ADC
+    // | modo de sequencia de conversao
+    ADC12CTL1 = ADC12SHS_1 | ADC12SHP | ADC12SSEL_3 | ADC12CONSEQ_0;
+    ADC12CTL2 = ADC12RES_2; // Resolucao de 12 bits
+
+    // Habilita o ADC12_A
+    // Mudancas nos parametros do ADC12_A devem ser feitas
+    // ANTES de habilitar o ADC12_A!
+    ADC12CTL0 |= ADC12ENC;
+
+    // Habilita as interrupcoes
+    ADC12IE = ADC12IE0;
+}
+
+void ENCODER_CFG() {
+    P2DIR |= BIT4;                          //P2.4 sendo selecionado para saida
+    P2SEL |= BIT4;                          //P2.4 sendo selecionado para funcao PWM
+
+    P1REN |= BIT5 | BIT4 | BIT3;           //Resistores internos em modo pull-up
+    P1OUT |= BIT5 | BIT4 | BIT3;
+    P1IE  |= phaseb | sw;                   // interrupt enable dos pinos
+    P1IES |= phaseb | sw;
+    P1IFG = 0x00;
+
+//-----------Configuracao do timer para controle do pwm via encoder----//
+    TA2CCTL1 = OUTMOD_7;                    //Timer A2 configurado no modo reset/set
+    TA2CCR0 = 167;
+    TA2CCR1 = count;                        //TACCR2 controlado pelo encoder
+    TA2CTL |= TASSEL_1 | MC_1 | TACLR;
 }
