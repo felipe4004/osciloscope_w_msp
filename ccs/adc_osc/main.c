@@ -104,7 +104,7 @@ int main(void)
 	// ANTES de habilitar o ADC12_A!
 	ADC12CTL0 |= ADC12ENC;
 
-	// Habilita interrupcoes
+	// Habilita as interrupcoes
 	ADC12IE = ADC12IE0;
 
 
