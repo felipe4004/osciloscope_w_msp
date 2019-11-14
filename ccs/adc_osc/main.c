@@ -1,6 +1,11 @@
 #include <msp430.h> 
 #include <math.h>
-
+#include "typedef.h"
+#include "ascii_char.h"
+#include "init_display.h"
+#include "lib_math.h"
+#include "lib_lcd.h"
+#include "delay.h"
 
 #define phasea  BIT5
 #define phaseb  BIT4
@@ -11,8 +16,13 @@ volatile int buffer[100] = {0};
 volatile int n = 0;
 volatile int adc_read[100];
 volatile int i = 0;
-float vrms =0, vavg=0;
+float vrms = 0, vavg=0;
 int count = 0;
+
+void UCSC_CFG();
+void TIMERA0_CFG();
+void ADC12_CFG();
+void ENCODER_CFG();
 
 int rms_cal (volatile int *buf){
     int xrms;
@@ -36,12 +46,23 @@ int avg_cal (volatile int *buf){
 
 int main(void)
 {
+    sint x = 0;
+
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 
     UCSC_CFG();
     TIMERA0_CFG();
     ADC12_CFG();
     ENCODER_CFG();
+
+// FADE IN HELLO WORLD -------------------------------------------
+    while(x<64)
+    {
+        // fade in via set_RGB function
+        draw_string(90,160,string_00,set_RGB16(0,x++,0),TRANSP,0,0);
+        wait_ms(60);
+    }
+    x=0;
 
 	__enable_interrupt();
 
