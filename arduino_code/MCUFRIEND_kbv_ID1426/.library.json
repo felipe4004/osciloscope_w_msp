@@ -1,0 +1,49 @@
+{
+    "name": "MCUFRIEND_kbv", 
+    "version": "2.9.9-Beta", 
+    "keywords": [
+        "display"
+    ], 
+    "description": "TFT Library for 2.4, 2.8, 3.5, 3.6, 3.95 inch mcufriend UNO Shields", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "platforms": [
+        "atmelavr", 
+        "atmelsam", 
+        "espressif32", 
+        "espressif8266", 
+        "intel_arc32", 
+        "microchippic32", 
+        "nordicnrf51", 
+        "nordicnrf52", 
+        "ststm32", 
+        "teensy", 
+        "timsp430"
+    ], 
+    "authors": [
+        {
+            "email": null, 
+            "url": null, 
+            "maintainer": true, 
+            "name": "David Prentice"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/prenticedavid/MCUFRIEND_kbv"
+    }, 
+    "homepage": null, 
+    "export": {
+        "include": null, 
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ]
+    }, 
+    "id": 1426
+}

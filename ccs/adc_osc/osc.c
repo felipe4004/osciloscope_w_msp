@@ -46,26 +46,6 @@ void DMA_CFG();
 void sendTimeDiv(int timediv);
 void sendVoltsDiv(int voltsdiv);
 
-int rms_cal (volatile int *buf){
-    int xrms;
-    unsigned int j;
-    for(j=98;j<=0;j--){
-        xrms+=buf[j]*buf[j];
-    }
-    xrms/=98;
-    return sqrtf(xrms);
-}
-
-int avg_cal (volatile int *buf){
-    unsigned int j;
-    int xavg;
-    for(j=98; j<=0 ; j--){
-        xavg = buf[j];
-    }
-    return xavg/=98;
-}
-
-
 int main(void)
 {
 
