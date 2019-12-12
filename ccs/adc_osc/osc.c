@@ -15,14 +15,17 @@
 volatile unsigned char buffer[SIZE] = {0};
 
 // Variaveis para controle
-volatile char ymod = 1; // controle vertical
+volatile char ymod = 4; // controle vertical
 // Variavel para sinal do ADC12
 unsigned char signal = 0;
 
 // Variaveis para o encoder
 volatile int adc_conv;
 volatile int adc_read;
+volatile int timedivon = 0;
+volatile int voltsdivon = 0;
 volatile unsigned int sel_time = 0;
+volatile unsigned int sel_volts = 0;
 volatile char mode;
 volatile unsigned int sel_mode = 0x00;
 volatile unsigned char disp_val = 0;
@@ -30,11 +33,18 @@ volatile unsigned char disp_val = 0;
 float vrms = 0, vavg=0;
 int count = 0;
 
+typedef union _entrada {
+  unsigned int val;
+  unsigned char b[4];
+} entrada;
+
 void TIMERA0_CFG();
 void ADC12_CFG();
 void ENCODER_CFG();
 void SPI_CFG();
 void DMA_CFG();
+void sendTimeDiv(int timediv);
+void sendVoltsDiv(int voltsdiv);
 
 int rms_cal (volatile int *buf){
     int xrms;
@@ -65,6 +75,7 @@ int main(void)
     ADC12_CFG();
     ENCODER_CFG();
     SPI_CFG();
+   //DMA_CFG();
 
 	__enable_interrupt();
 
@@ -74,7 +85,9 @@ int main(void)
 
 #pragma vector = ADC12_VECTOR
 __interrupt void ADC12_A_ISR(void) {
-    signal = (ADC12MEM0*LENGTHY/255);
+    if(timedivon || voltsdivon) return;
+    signal = (ymod*ADC12MEM0*LENGTHY/255)>>2;
+    signal = (signal > LENGTHY) ? 255 : signal;
     if(UCA0IFG & UCTXIFG) {
         UCA0TXBUF = signal;
     }
@@ -83,70 +96,144 @@ __interrupt void ADC12_A_ISR(void) {
 #pragma vector = PORT1_VECTOR
 __interrupt void sw_push(void){
     switch (P1IV){
-        case 0x02:
-        case 0x04:
-        case 0x06:
         case 0x08:                              //Ordenamento dos TAIV para separacao das funcoes
                                                 //do encoder.
             P1IFG &= ~0x08;
             sel_mode++;
-        switch (sel_mode){
-        case    0x00:
-            //selecao do tempo//
-            mode = 1;
+            switch (sel_mode){
+                case    0x00:
+                    //selecao do tempo//
+                    mode = 0;
+                    break;
+                case    0x01:
+                    mode= 1;
+                    break;
+                case    0x02:
+                    mode= 2;
+                    break;
+                default:
+                    mode= 0;
+                    sel_mode = 0x00;
+                    break;
+            }
             break;
-        case    0x01:
-            mode= 2;
-            break;
-        case    0x02:
-            mode= 3;
-            break;
-        default:
-            mode= 4;
-            sel_mode = 0x00;
-            break;
-        }
-            break;
-        case 0x0A:
+
+        case 0x0A: // Caso para a rotacao do encoder
             P1IFG &= ~0x0A;
             switch (mode){
-            case 1:
-                if((P1IN & phasea)){            //phase a e b sao utilizados para a verificacao
-                    sel_time++;                    //da diferenca de fase.
-                }
-                else{
-                    sel_time--;
-
-            }
-           switch (sel_time){
-           case 0x00:
-               TA0CCR0 = 49999;
-               break;
-           case 0x01:
-               TA0CCR0 = 9999;
-               break;
-           case 0x02:
-               TA0CCR0 = 4999;
-               break;
-           case 0x03:
-               TA0CCR0 = 999;
-               break;
-           case 0x04:
-               TA0CCR0 = 499;
-               break;
-           default:
-               sel_time = 0x00;
-           }
-                }
-            break;
-        case 0x0C:
-        case 0x0E:
-        case 0x10:
-        default:
-          P1IFG = 0x00;
-          break;
+                case 0:
+                    if((P1IN & phasea)){            //phase a e b sao utilizados para a verificacao
+                        sel_time++;                    //da diferenca de fase.
+                        if(sel_time >= 0x07) sel_time = 0x00;
+                    }
+                    else{
+                        if(sel_time>0)
+                            sel_time--;
+                    }
+                    switch (sel_time){
+                       case 0x00:
+                           TA0CCR0 = 999;
+                           sendTimeDiv(1000);
+                           break;
+                       case 0x01:
+                           TA0CCR0 = 499;
+                           sendTimeDiv(500);
+                           break;
+                       case 0x02:
+                           TA0CCR0 = 249;
+                           sendTimeDiv(250);
+                           break;
+                       case 0x03:
+                           TA0CCR0 = 99;
+                           sendTimeDiv(100);
+                           break;
+                       case 0x04:
+                           TA0CCR0 = 49;
+                           sendTimeDiv(50);
+                           break;
+                       case 0x05:
+                           TA0CCR0 = 24;
+                           sendTimeDiv(25);
+                           break;
+                       case 0x06:
+                           TA0CCR0 = 9;
+                           sendTimeDiv(10);
+                           break;
+                       default:
+                           break;
+                   }
+                   break;
+               case 1:
+                   if((P1IN & phasea)){            //phase a e b sao utilizados para a verificacao
+                       sel_volts++;                    //da diferenca de fase.
+                       if(sel_volts >= 0x05) sel_volts = 0x00;
+                   }
+                   else{
+                       if(sel_volts>0)
+                           sel_volts--;
+                   }
+                   switch (sel_volts){
+                      case 0x00:
+                          ymod = 8;
+                          sendVoltsDiv(1);
+                          break;
+                      case 0x01:
+                          ymod = 6;
+                          sendVoltsDiv(2);
+                          break;
+                      case 0x02:
+                          ymod = 4;
+                          sendVoltsDiv(4);
+                          break;
+                      case 0x03:
+                          ymod = 2;
+                          sendVoltsDiv(8);
+                          break;
+                      case 0x04:
+                          ymod = 1;
+                          sendVoltsDiv(16);
+                          break;
+                      default:
+                          break;
+                  }
+                  break;
+              }
+              break;
+          default:
+              break;
     }
-        //TACCR é atualizado com o valor obtido do encoder.
+}
+
+void sendTimeDiv(int timediv) {
+    timedivon = 1;
+    UCA0TXBUF = 0xFF; // Envia o comando de modo de tempo
+    while(!(UCA0IFG & UCTXIFG)) {} // Espera terminar de transmitir o comando
+
+    int k=0;
+    entrada tempo;
+    tempo.val = timediv;
+
+    for(k=0; k<=3; k++) {
+        UCA0TXBUF = tempo.b[k];
+        while(!(UCA0IFG & UCTXIFG)) {} // Espera transmitir o byte
+    }
+    timedivon = 0;
+}
+
+void sendVoltsDiv(int voltsdiv) {
+    voltsdivon = 1;
+    UCA0TXBUF = 0xFE; // Envia o comando de modo de volt
+    while(!(UCA0IFG & UCTXIFG)) {} // Espera terminar de transmitir o comando
+
+    int k=0;
+    entrada volts;
+    volts.val = voltsdiv;
+
+    for(k=0; k<=3; k++) {
+        UCA0TXBUF = volts.b[k];
+        while(!(UCA0IFG & UCTXIFG)) {} // Espera transmitir o byte
+    }
+    voltsdivon = 0;
 }
 
 void SPI_CFG() {
@@ -190,7 +277,7 @@ void TIMERA0_CFG() {
 
     // Tempo de amostragem: t_sample > (R_S + R_I) × ln(2^(n+1)) × C_I + 800 ns
     // Para R_S = 10R, R_I = 1k, n=12, C_I = 20pF --> t_sample > 0.984 us ~ 1 us
-    TA0CCR0 = 99;
+    TA0CCR0 = 999;
 
     // CCR1 OUT --> ADC12SHS_1
     // Modo de saida Reset/Set.
